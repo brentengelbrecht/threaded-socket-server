@@ -78,7 +78,9 @@ void *dequeue(struct queue *q) {
         q->tail = NULL;
     }
 
-    return p->data;
+    void *data = p->data;
+    free(p);
+    return data;
 }
 
 
