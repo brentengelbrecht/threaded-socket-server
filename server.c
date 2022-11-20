@@ -4,8 +4,23 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <sys/types.h>
+#include <fcntl.h>
 #include <unistd.h>
 #include "server.h"
+#include "queue.h"
+
+
+pthread_mutex_t lock;
+bool done = false;
+
+int thread_count = 0;
+struct thread_management {
+    pthread_t thread_id;
+    bool exited;
+    bool available;
+} thread_man[MAX_THREADS];
+
+struct queue *conn_queue;
 
 
 void *client_handler(void *parameters) {
@@ -37,6 +52,7 @@ int main(int argc, int *argv) {
     int sockfd, connfd, client_size = sizeof(client_address), port = PORT;
     int i = 0, slot = -1;
 
+
     printf("Server starts!\n\n");
 
     if (!initialise()) {
@@ -66,6 +82,8 @@ int main(int argc, int *argv) {
         exit(3);
     }
 
+    fcntl(sockfd, F_SETFL, O_NONBLOCK);
+
 
     /* 3. socket to passive mode, list for connections */
 
@@ -81,27 +99,27 @@ int main(int argc, int *argv) {
 
     while (!done) {
         connfd = accept(sockfd, (SOCKADDR_PTR)&client_address, &client_size);
-        if (connfd < 0) {
-            printf("Server accept failed!\n");
-            done = true;
-            continue;
+
+        /* 5. Add the connection to the queue */
+
+        if (connfd > 0) {
+            HANDLER_PARAMS_PTR gci = get_client_info(-1, connfd, client_address);
+            if (enqueue(conn_queue, gci)) {
+                printf("Stored client connection (%d)\n", queue_size(conn_queue));
+            } else {
+                printf("couldn\'t store connection... Closing\n");
+                close(connfd);
+            }
         }
 
-        /* 5. Hand-off to a new thread */
+        /* 5a. Get next connection and start a thread */
 
-        if ((slot = get_next_slot()) == -1) {
-            printf("Maxed out threads (%d)... No more connections\n", MAX_THREADS);
-            close(connfd);
-        } else {
+        if ((queue_size(conn_queue) > 0) && (slot = get_next_slot()) > -1) {
             printf("\tStarting thread in slot %d\n", slot);
-
-            HANDLER_PARAMS_PTR gci = get_client_info(slot, connfd, client_address);
-            if (gci == NULL) {
-                printf("Memory allocation failed! Closing connection...\n");
-                close(connfd);
-            } else {
-                create_new_thread(slot, gci);
-            }
+            void *data = dequeue(conn_queue);
+            HANDLER_PARAMS_PTR gci = (HANDLER_PARAMS_PTR)data;
+            gci->slot = slot;
+            create_new_thread(gci);
         }
     }
 
@@ -115,6 +133,8 @@ int main(int argc, int *argv) {
         }
     }
 
+    process_queue(conn_queue, cleanup_socket_connections);
+    destroy_queue(conn_queue);
 
     /* 7. Clean up server socket */
 
@@ -124,7 +144,14 @@ int main(int argc, int *argv) {
 }
 
 
-void create_new_thread(int slot, HANDLER_PARAMS_PTR gci) {
+void cleanup_socket_connections(void *p) {
+    HANDLER_PARAMS_PTR gci = (HANDLER_PARAMS_PTR)p;
+    close(gci->connfd);
+}
+
+
+void create_new_thread(HANDLER_PARAMS_PTR gci) {
+    int slot = gci->slot;
     thread_man[slot].exited = false;
     thread_man[slot].available = false;
     inc_thread_count_safe();
@@ -168,6 +195,8 @@ bool initialise() {
         thread_man[i].exited = false;
         thread_man[i].available = true;
     }
+
+    conn_queue = create_new_queue();
 
     return true;
 }
