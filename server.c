@@ -34,7 +34,7 @@ void *client_handler(void *parameters) {
     printf("\tNew connection: client ip %s, port %d\n", ip, addr_in->sin_port);
 
     /* Do thread-specific work here */
-    sleep(20);
+    sleep(SLEEP);
     /* End thread-specific work here */
 
     close(p->connfd);

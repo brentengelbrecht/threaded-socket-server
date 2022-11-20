@@ -4,8 +4,9 @@
 
 
 /**********************************************************************/
-#define PORT 9010       /* Port to listen on for server connections   */
+#define PORT 9011       /* Port to listen on for server connections   */
 #define MAX_THREADS 2   /* Maximum number of threads to use           */
+#define SLEEP 60        /* Maximum time to put client thread to sleep */
 /**********************************************************************/
 
 
