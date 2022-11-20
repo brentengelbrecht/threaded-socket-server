@@ -33,7 +33,9 @@ void *client_handler(void *parameters) {
     printf("New Thread (slot %d) - thread_id %ld (Total %d)\n", idx, pthread_self(), get_thread_count_safe());
     printf("\tNew connection: client ip %s, port %d\n", ip, addr_in->sin_port);
 
+    /* Do thread-specific work here */
     sleep(20);
+    /* End thread-specific work here */
 
     close(p->connfd);
 
@@ -85,7 +87,7 @@ int main(int argc, int *argv) {
     fcntl(sockfd, F_SETFL, O_NONBLOCK);
 
 
-    /* 3. socket to passive mode, list for connections */
+    /* 3. Socket to passive mode, listen for connections */
 
     if (listen(sockfd, 5) != 0) {
         printf("Socket listen failed!\n");
@@ -160,7 +162,7 @@ void create_new_thread(HANDLER_PARAMS_PTR gci) {
 
 
 HANDLER_PARAMS_PTR get_client_info(int slot, int connfd, struct sockaddr_in client_address) {
-    HANDLER_PARAMS_PTR params = malloc(sizeof (struct handler_params));
+    HANDLER_PARAMS_PTR params = (HANDLER_PARAMS_PTR)malloc(sizeof(struct handler_params));
     if (params != NULL) {
         params->slot = slot;
         params->connfd = connfd;
@@ -222,8 +224,4 @@ void dec_thread_count_safe() {
     pthread_mutex_lock(&lock);
     thread_count--;
     pthread_mutex_unlock(&lock);
-}
-
-void write_log(char *s) {
-    printf("%s\n", s);
 }
