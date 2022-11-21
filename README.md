@@ -6,4 +6,4 @@ Compact server to accept new socket connections and run them in a separate threa
 
 ## To build (Linux)
 
-Run this command `gcc -o server server.c queue.c`
+Run this command `gcc -o server server.c queue.c key_list.c`
