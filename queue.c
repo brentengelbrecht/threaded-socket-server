@@ -4,8 +4,8 @@
 #include "queue.h"
 
 
-struct queue *create_new_queue() {
-    struct queue *p = (struct queue *)malloc(sizeof(struct queue));
+QUEUE_PTR create_new_queue() {
+    QUEUE_PTR p = (QUEUE_PTR)malloc(sizeof(QUEUE));
     if (p == NULL) {
         printf("Memory allocation for queue failed!\n");
         return NULL;
@@ -16,10 +16,10 @@ struct queue *create_new_queue() {
 }
 
 
-void destroy_queue(struct queue *q) {
-    struct queue_node *p = q->head;
+void destroy_queue(QUEUE_PTR q) {
+    QUEUE_NODE_PTR p = q->head;
     while (p != NULL) {
-        struct queue_node *r = p;
+        QUEUE_NODE_PTR r = p;
         p = p->next;
         if (r->data != NULL) {
             free(r->data);
@@ -30,8 +30,8 @@ void destroy_queue(struct queue *q) {
 }
 
 
-void process_queue(struct queue *q, void (*proc)(void *data)) {
-    struct queue_node *p = q->head;
+void process_queue(QUEUE_PTR q, void (*proc)(void *data)) {
+    QUEUE_NODE_PTR p = q->head;
     while (p != NULL) {
         proc(p->data);
         p = p->next;
@@ -39,12 +39,12 @@ void process_queue(struct queue *q, void (*proc)(void *data)) {
 }
 
 
-bool enqueue(struct queue *q, void *data) {
+bool enqueue(QUEUE_PTR q, void *data) {
     if (q == NULL) {
         printf("Queue isn\'t allocated!\n");
         return false;
     }
-    struct queue_node *n = (struct queue_node *)malloc(sizeof(struct queue_node));
+    QUEUE_NODE_PTR n = (QUEUE_NODE_PTR)malloc(sizeof(QUEUE_NODE));
     if (n == NULL) {
         printf("Memory allocation for queue_node failed!\n");
         return false;
@@ -63,12 +63,12 @@ bool enqueue(struct queue *q, void *data) {
 }
 
 
-void *dequeue(struct queue *q) {
+void *dequeue(QUEUE_PTR q) {
     if (q->head == NULL) {
         return NULL;
     }
 
-    struct queue_node *p = q->head;
+    QUEUE_NODE_PTR p = q->head;
     q->node_count--;
 
     if (q->head != q->tail) {
@@ -84,7 +84,7 @@ void *dequeue(struct queue *q) {
 }
 
 
-int queue_size(struct queue *q) {
+int queue_size(QUEUE_PTR q) {
     if (q == NULL) {
         return 0;
     }

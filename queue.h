@@ -1,21 +1,27 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
+typedef struct queue_node QUEUE_NODE;
+typedef struct queue_node * QUEUE_NODE_PTR;
+
+typedef struct queue QUEUE;
+typedef struct queue * QUEUE_PTR;
 
 struct queue_node {
-    struct queue_node *next;
+    QUEUE_NODE_PTR next;
     void *data;
 };
 
 struct queue {
     int node_count;
-    struct queue_node *head, *tail;
+    QUEUE_NODE_PTR head;
+    QUEUE_NODE_PTR tail;
 };
 
 
-struct queue *create_new_queue();
-void destroy_queue(struct queue *q);
-void process_queue(struct queue *q, void (*proc)(void *data));
-bool enqueue(struct queue *q, void *data);
-void *dequeue(struct queue *q);
-int queue_size(struct queue *q);
+QUEUE_PTR create_new_queue();
+void destroy_queue(QUEUE_PTR q);
+void process_queue(QUEUE_PTR q, void (*proc)(void *data));
+bool enqueue(QUEUE_PTR q, void *data);
+void *dequeue(QUEUE_PTR q);
+int queue_size(QUEUE_PTR q);

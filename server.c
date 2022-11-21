@@ -20,7 +20,7 @@ struct thread_management {
     bool available;
 } thread_man[MAX_THREADS];
 
-struct queue *conn_queue;
+QUEUE_PTR conn_queue;
 
 
 void *client_handler(void *parameters) {
