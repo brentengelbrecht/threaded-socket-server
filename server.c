@@ -8,30 +8,38 @@
 #include <unistd.h>
 #include "server.h"
 #include "queue.h"
+#include "key_list.h"
 
+#define THREAD_MANAGEMENT struct thread_management
+#define THREAD_MANAGEMENT_PTR struct thread_management *
+
+
+THREAD_MANAGEMENT {
+    int key;
+    pthread_t thread_id;
+};
+
+QUEUE_PTR conn_queue = NULL;
+KEY_LIST_PTR thread_list = NULL;
 
 pthread_mutex_t lock;
 bool done = false;
 
-int thread_count = 0;
-struct thread_management {
-    pthread_t thread_id;
-    bool exited;
-    bool available;
-} thread_man[MAX_THREADS];
-
-QUEUE_PTR conn_queue;
-
 
 void *client_handler(void *parameters) {
+    THREAD_MANAGEMENT_PTR t_data;
+    KEY_LIST_NODE_PTR t_ptr;
+
     HANDLER_PARAMS_PTR p = (HANDLER_PARAMS_PTR)parameters;
-    int idx = p->slot;
-    bool *exited = &(thread_man[idx].exited);
     struct sockaddr_in *addr_in = (struct sockaddr_in *)&p->client_address;
     char *ip = inet_ntoa(addr_in->sin_addr);
 
-    printf("New Thread (slot %d) - thread_id %ld (Total %d)\n", idx, pthread_self(), get_thread_count_safe());
-    printf("\tNew connection: client ip %s, port %d\n", ip, addr_in->sin_port);
+    t_ptr = (KEY_LIST_NODE_PTR)find_key_list_node(thread_list, p->thread_key);
+    if (t_ptr != NULL) {
+        t_data = (THREAD_MANAGEMENT_PTR)t_ptr->data;
+        printf("\tNew Thread (key %d) - thread_id %ld (Total threads %d)\n", t_data->key, pthread_self(), get_key_list_size(thread_list));
+        printf("\t\tNew connection: client ip %s, port %d\n", ip, addr_in->sin_port);
+    }
 
     /* Do thread-specific work here */
     sleep(SLEEP);
@@ -39,12 +47,13 @@ void *client_handler(void *parameters) {
 
     close(p->connfd);
 
-    printf("Exiting Thread idx %d - thread_id %ld\n", idx, thread_man[idx].thread_id);
+    printf("Exiting Thread (key %d) - thread_id %ld\n", t_data->key, t_data->thread_id);
 
     free(parameters);
 
-    *exited = true;
-    dec_thread_count_safe();
+    remove_key_list_node(thread_list, t_data->key);
+
+    //pthread_detach(pthread_self());
     pthread_exit(NULL);
 }
 
@@ -105,38 +114,41 @@ int main(int argc, int *argv) {
         /* 5. Add the connection to the queue */
 
         if (connfd > 0) {
-            HANDLER_PARAMS_PTR gci = get_client_info(-1, connfd, client_address);
+            HANDLER_PARAMS_PTR gci = get_client_info(connfd, client_address);
             if (enqueue(conn_queue, gci)) {
                 printf("Stored client connection (%d)\n", queue_size(conn_queue));
             } else {
-                printf("couldn\'t store connection... Closing\n");
+                printf("Couldn\'t store connection... Closing\n");
                 close(connfd);
             }
         }
 
         /* 5a. Get next connection and start a thread */
 
-        if ((queue_size(conn_queue) > 0) && (slot = get_next_slot()) > -1) {
-            printf("\tStarting thread in slot %d\n", slot);
-            void *data = dequeue(conn_queue);
-            HANDLER_PARAMS_PTR gci = (HANDLER_PARAMS_PTR)data;
-            gci->slot = slot;
-            create_new_thread(gci);
+        if (!is_key_list_full(thread_list) && queue_size(conn_queue) > 0) {
+            HANDLER_PARAMS_PTR client_conn = (HANDLER_PARAMS_PTR)dequeue(conn_queue);
+
+            THREAD_MANAGEMENT_PTR t = (THREAD_MANAGEMENT_PTR)malloc(sizeof(THREAD_MANAGEMENT));
+            if (t == NULL) {
+                printf("Memory allocation for thread management node failed!\n");
+            } else {
+                int key = add_key_list_node(thread_list, t);
+                t->key = client_conn->thread_key = key;
+                printf("Starting thread (key %d)\n", key);
+                pthread_create(&t->thread_id, NULL, client_handler, client_conn);
+            }
         }
     }
 
 
-    /* 6. Wait for all threads to finish */
-
-    for (i = 0; i < MAX_THREADS; i++) {
-        if (!thread_man[i].available) {
-            pthread_join(thread_man[i].thread_id, NULL);
-            thread_man[i].available = true;
-        }
-    }
+    /* 6. Close any open client sockets, wait for all threads to finish, */
 
     process_queue(conn_queue, cleanup_socket_connections);
     destroy_queue(conn_queue);
+
+    process_key_list(thread_list, cleanup_threads);
+    destroy_key_list(thread_list);
+
 
     /* 7. Clean up server socket */
 
@@ -147,41 +159,26 @@ int main(int argc, int *argv) {
 
 
 void cleanup_socket_connections(void *p) {
-    HANDLER_PARAMS_PTR gci = (HANDLER_PARAMS_PTR)p;
-    close(gci->connfd);
+    HANDLER_PARAMS_PTR client_conn = (HANDLER_PARAMS_PTR)p;
+    if (client_conn->connfd > 0) {
+        close(client_conn->connfd);
+    }
 }
 
 
-void create_new_thread(HANDLER_PARAMS_PTR gci) {
-    int slot = gci->slot;
-    thread_man[slot].exited = false;
-    thread_man[slot].available = false;
-    inc_thread_count_safe();
-    pthread_create(&thread_man[slot].thread_id, NULL, client_handler, gci);
+void cleanup_threads(void *p) {
+    THREAD_MANAGEMENT_PTR t_ptr = (THREAD_MANAGEMENT_PTR)p;
+    pthread_join(t_ptr->thread_id, NULL);
 }
 
 
-HANDLER_PARAMS_PTR get_client_info(int slot, int connfd, struct sockaddr_in client_address) {
+HANDLER_PARAMS_PTR get_client_info(int connfd, struct sockaddr_in client_address) {
     HANDLER_PARAMS_PTR params = (HANDLER_PARAMS_PTR)malloc(sizeof(struct handler_params));
     if (params != NULL) {
-        params->slot = slot;
         params->connfd = connfd;
         params->client_address = client_address;
     }
     return params;
-}
-
-
-int get_next_slot() {
-    int i;
-
-    for (i = 0; i < MAX_THREADS; i++) {
-        if ((thread_man[i].available) || (thread_man[i].exited)) {
-            return i;
-        }
-    }
-
-    return -1;
 }
 
 
@@ -193,35 +190,9 @@ bool initialise() {
         return false;
     }
 
-    for (i = 0; i < MAX_THREADS; i++) {
-        thread_man[i].exited = false;
-        thread_man[i].available = true;
-    }
+    thread_list = create_new_key_list(MAX_THREADS, &lock);
 
     conn_queue = create_new_queue();
 
     return true;
-}
-
-
-int get_thread_count_safe() {
-    int count = 0;
-    pthread_mutex_lock(&lock);
-    count = thread_count;
-    pthread_mutex_unlock(&lock);
-    return count;
-}
-
-
-void inc_thread_count_safe() {
-    pthread_mutex_lock(&lock);
-    thread_count++;
-    pthread_mutex_unlock(&lock);
-}
-
-
-void dec_thread_count_safe() {
-    pthread_mutex_lock(&lock);
-    thread_count--;
-    pthread_mutex_unlock(&lock);
 }

@@ -4,14 +4,14 @@
 
 
 /**********************************************************************/
-#define PORT 9011       /* Port to listen on for server connections   */
+#define PORT 9014       /* Port to listen on for server connections   */
 #define MAX_THREADS 2   /* Maximum number of threads to use           */
-#define SLEEP 60        /* Maximum time to put client thread to sleep */
+#define SLEEP 8         /* Maximum time to put client thread to sleep */
 /**********************************************************************/
 
 
 struct handler_params {
-    int slot;
+    int thread_key;
     int connfd;
     struct sockaddr_in client_address;
 };
@@ -25,9 +25,9 @@ int get_thread_count_safe();
 void inc_thread_count_safe();
 void dec_thread_count_safe();
 int get_next_slot();
-HANDLER_PARAMS_PTR get_client_info(int slot, int connfd, struct sockaddr_in client_address);
-void create_new_thread(HANDLER_PARAMS_PTR gci);
+HANDLER_PARAMS_PTR get_client_info(int connfd, struct sockaddr_in client_address);
+void run_new_thread(HANDLER_PARAMS_PTR gci);
 void write_log(char *s);
 bool initialise();
 void cleanup_socket_connections(void *p);
-
+void cleanup_threads(void *p);
