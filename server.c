@@ -6,6 +6,7 @@
 #include <sys/types.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <signal.h>
 #include "server.h"
 #include "queue.h"
 #include "key_list.h"
@@ -59,6 +60,8 @@ void *client_handler(void *parameters) {
 
 
 int main(int argc, int *argv) {
+    signal(SIGINT, signal_handler);
+
     struct sockaddr_in server_address, client_address;
     int sockfd, connfd, client_size = sizeof(client_address), port = PORT;
     int i = 0, slot = -1;
@@ -143,9 +146,11 @@ int main(int argc, int *argv) {
 
     /* 6. Close any open client sockets, wait for all threads to finish, */
 
+    printf("\nCleaning up sockets\n");
     process_queue(conn_queue, cleanup_socket_connections);
     destroy_queue(conn_queue);
 
+    printf("Cleaning up threads\n");
     process_key_list(thread_list, cleanup_threads);
     destroy_key_list(thread_list);
 
@@ -154,6 +159,7 @@ int main(int argc, int *argv) {
 
     close(sockfd);
 
+    printf("\nServer stops.\n");
     return 0;
 }
 
@@ -195,4 +201,9 @@ bool initialise() {
     conn_queue = create_new_queue();
 
     return true;
+}
+
+
+void signal_handler(int signal) {
+    done = true;
 }
