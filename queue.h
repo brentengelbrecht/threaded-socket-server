@@ -21,7 +21,7 @@ struct queue {
 
 QUEUE_PTR create_new_queue();
 void destroy_queue(QUEUE_PTR q);
-void process_queue(QUEUE_PTR q, void (*proc)(void *data));
+void process_queue(QUEUE_PTR q, bool (*proc)(void *data));
 bool enqueue(QUEUE_PTR q, void *data);
 void *dequeue(QUEUE_PTR q);
 int queue_size(QUEUE_PTR q);

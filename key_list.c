@@ -34,10 +34,12 @@ void destroy_key_list(KEY_LIST_PTR q) {
 }
 
 
-void process_key_list(KEY_LIST_PTR q, void (*proc)(void *data)) {
+void process_key_list(KEY_LIST_PTR q, bool (*proc)(void *data)) {
     KEY_LIST_NODE_PTR p = q->head;
     while (p != NULL) {
-        proc(p->data);
+        if (proc(p->data)) {
+            break;
+        }
         p = p->next;
     }
 }

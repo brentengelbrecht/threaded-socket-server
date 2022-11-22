@@ -23,7 +23,7 @@ struct key_list {
 
 KEY_LIST_PTR create_new_key_list(int capacity, pthread_mutex_t *lock);
 void destroy_key_list(KEY_LIST_PTR q);
-void process_key_list(KEY_LIST_PTR q, void (*proc)(void *data));
+void process_key_list(KEY_LIST_PTR q, bool (*proc)(void *data));
 KEY_LIST_NODE_PTR find_key_list_node(KEY_LIST_PTR q, int key);
 int add_key_list_node(KEY_LIST_PTR q, void *data);
 void *remove_key_list_node(KEY_LIST_PTR q, int key);
