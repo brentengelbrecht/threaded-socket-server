@@ -5,11 +5,12 @@
 #include <time.h>
 
 
-/**********************************************************************/
-#define PORT 9014       /* Port to listen on for server connections   */
-#define MAX_THREADS 2   /* Maximum number of threads to use           */
-#define SLEEP 8         /* Maximum time to put client thread to sleep */
-/**********************************************************************/
+/************************************************************************************************/
+#define PORT 9015       /* Port to listen on for server connections                             */
+#define MAX_THREADS 2   /* Maximum number of threads to use                                     */
+#define SLEEP 30        /* Maximum time to put client thread to sleep                           */
+#define TIMEOUT 10      /* Number of seconds to wait for a thread before closing the connection */
+/************************************************************************************************/
 
 
 struct handler_params {
@@ -28,5 +29,6 @@ struct handler_params {
 HANDLER_PARAMS_PTR get_client_info(int connfd, struct sockaddr_in client_address);
 bool initialise();
 bool cleanup_socket_connections(void *p);
+bool time_out_socket_connection(void *p);
 bool cleanup_threads(void *p);
 void signal_handler(int);

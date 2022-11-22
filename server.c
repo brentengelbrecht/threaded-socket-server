@@ -117,7 +117,7 @@ int main(int argc, int *argv) {
 
         /* 5. Add the connection to the queue */
 
-        if (connfd > 0) {
+        if ((connfd > 0) && (conn_queue != NULL)) {
             HANDLER_PARAMS_PTR gci = get_client_info(connfd, client_address);
             if (enqueue(conn_queue, gci)) {
                 printf("Stored client connection (%d)\n", queue_size(conn_queue));
@@ -127,10 +127,14 @@ int main(int argc, int *argv) {
             }
         }
 
+
         /* 5a. Get next connection and start a thread */
 
         if (!is_key_list_full(thread_list) && queue_size(conn_queue) > 0) {
             HANDLER_PARAMS_PTR client_conn = (HANDLER_PARAMS_PTR)dequeue(conn_queue);
+            if (client_conn->connfd < 0) {
+                continue;
+            }
 
             THREAD_MANAGEMENT_PTR t = (THREAD_MANAGEMENT_PTR)malloc(sizeof(THREAD_MANAGEMENT));
             if (t == NULL) {
@@ -141,6 +145,13 @@ int main(int argc, int *argv) {
                 printf("Starting thread (key %d)\n", key);
                 pthread_create(&t->thread_id, NULL, client_handler, client_conn);
             }
+        }
+
+
+        /* 5b. Check for timed-out sockets and close them */
+
+        if ((conn_queue != NULL) && (queue_size(conn_queue) > 0)) {
+            process_queue(conn_queue, time_out_socket_connection);
         }
     }
 
@@ -169,6 +180,24 @@ bool cleanup_socket_connections(void *p) {
     HANDLER_PARAMS_PTR client_conn = (HANDLER_PARAMS_PTR)p;
     if (client_conn->connfd > 0) {
         close(client_conn->connfd);
+    }
+    return false;
+}
+
+
+bool time_out_socket_connection(void *p) {
+    HANDLER_PARAMS_PTR client_conn = (HANDLER_PARAMS_PTR)p;
+    if (client_conn->connfd < 0) {
+        return false;
+    }
+
+    time_t now = time(NULL);
+    int v = now - client_conn->start;
+    if (v >= TIMEOUT) {
+        printf("Timing out socket (%d) - duration %d seconds\n", client_conn->connfd, v);
+        close(client_conn->connfd);
+        client_conn->connfd = -1;
+        return true;
     }
     return false;
 }
