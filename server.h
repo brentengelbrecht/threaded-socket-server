@@ -2,6 +2,7 @@
 #include <pthread.h>
 #include <signal.h>
 #include <stdbool.h>
+#include <time.h>
 
 
 /**********************************************************************/
@@ -15,9 +16,11 @@ struct handler_params {
     int thread_key;
     int connfd;
     struct sockaddr_in client_address;
+    time_t start;
 };
 
 
+#define HANDLER_PARAMS struct handler_params
 #define HANDLER_PARAMS_PTR struct handler_params *
 #define SOCKADDR_PTR struct sockaddr *
 

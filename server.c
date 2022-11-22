@@ -7,6 +7,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <signal.h>
+#include <time.h>
 #include "server.h"
 #include "queue.h"
 #include "key_list.h"
@@ -179,12 +180,13 @@ void cleanup_threads(void *p) {
 
 
 HANDLER_PARAMS_PTR get_client_info(int connfd, struct sockaddr_in client_address) {
-    HANDLER_PARAMS_PTR params = (HANDLER_PARAMS_PTR)malloc(sizeof(struct handler_params));
-    if (params != NULL) {
-        params->connfd = connfd;
-        params->client_address = client_address;
+    HANDLER_PARAMS_PTR p = (HANDLER_PARAMS_PTR)malloc(sizeof(HANDLER_PARAMS));
+    if (p != NULL) {
+        p->connfd = connfd;
+        p->client_address = client_address;
+        p->start = time(NULL);
     }
-    return params;
+    return p;
 }
 
 
