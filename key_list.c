@@ -148,7 +148,7 @@ bool is_key_list_full(KEY_LIST_PTR q) {
         return true;
     }
     pthread_mutex_lock(q->lock);
-    r = q->capacity == q->size;
+    r = q->capacity <= q->size;
     pthread_mutex_unlock(q->lock);
     return r;
 }
