@@ -63,8 +63,8 @@ int main(int argc, int *argv) {
     signal(SIGINT, signal_handler);
 
     struct sockaddr_in server_address, client_address;
-    int sockfd, connfd, client_size = sizeof(client_address), port = PORT;
-    int i = 0, slot = -1;
+    int sockfd, connfd, client_size = 0, port = PORT;
+    int i = 0;
 
 
     printf("Server starts!\n\n");
