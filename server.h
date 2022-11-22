@@ -27,6 +27,6 @@ struct handler_params {
 
 HANDLER_PARAMS_PTR get_client_info(int connfd, struct sockaddr_in client_address);
 bool initialise();
-void cleanup_socket_connections(void *p);
-void cleanup_threads(void *p);
+bool cleanup_socket_connections(void *p);
+bool cleanup_threads(void *p);
 void signal_handler(int);

@@ -165,17 +165,19 @@ int main(int argc, int *argv) {
 }
 
 
-void cleanup_socket_connections(void *p) {
+bool cleanup_socket_connections(void *p) {
     HANDLER_PARAMS_PTR client_conn = (HANDLER_PARAMS_PTR)p;
     if (client_conn->connfd > 0) {
         close(client_conn->connfd);
     }
+    return false;
 }
 
 
-void cleanup_threads(void *p) {
+bool cleanup_threads(void *p) {
     THREAD_MANAGEMENT_PTR t_ptr = (THREAD_MANAGEMENT_PTR)p;
     pthread_join(t_ptr->thread_id, NULL);
+    return false;
 }
 
 
