@@ -12,14 +12,24 @@
 #include "queue.h"
 #include "key_list.h"
 
+#define SERVER_DEFAULTS struct server_defaults
+#define SERVER_DEFAULTS_PTR struct server_defaults *
+
+SERVER_DEFAULTS {
+    int port, max_threads, wait_timeout;
+} defaults = { PORT, MAX_THREADS, TIMEOUT };
+
+SERVER_DEFAULTS_PTR defaults_ptr = &defaults;
+
+
 #define THREAD_MANAGEMENT struct thread_management
 #define THREAD_MANAGEMENT_PTR struct thread_management *
-
 
 THREAD_MANAGEMENT {
     int key;
     pthread_t thread_id;
 };
+
 
 QUEUE_PTR conn_queue = NULL;
 KEY_LIST_PTR thread_list = NULL;
@@ -64,7 +74,7 @@ int main(int argc, int *argv) {
     signal(SIGINT, signal_handler);
 
     struct sockaddr_in server_address, client_address;
-    int sockfd, connfd, client_size = 0, port = PORT;
+    int sockfd, connfd, client_size = 0;
     int i = 0;
 
 
@@ -90,7 +100,7 @@ int main(int argc, int *argv) {
 
     server_address.sin_family = AF_INET;
     server_address.sin_addr.s_addr = htonl(INADDR_ANY);
-    server_address.sin_port = htons(port);
+    server_address.sin_port = htons(defaults_ptr->port);
 
     if (bind(sockfd, (SOCKADDR_PTR)&server_address, sizeof(server_address)) != 0) {
         printf("Socket bind failed!\n");
@@ -107,7 +117,7 @@ int main(int argc, int *argv) {
         exit(4);
     }
 
-    printf("Listening on port %d\n", port);
+    printf("Listening on port %d\n", defaults_ptr->port);
 
 
     /* 4. Accept connections from client */
@@ -193,7 +203,7 @@ bool time_out_socket_connection(void *p) {
 
     time_t now = time(NULL);
     int v = now - client_conn->start;
-    if (v >= TIMEOUT) {
+    if (v >= defaults_ptr->wait_timeout) {
         printf("Timing out socket (%d) - duration %d seconds\n", client_conn->connfd, v);
         close(client_conn->connfd);
         client_conn->connfd = -1;
@@ -229,7 +239,7 @@ bool initialise() {
         return false;
     }
 
-    thread_list = create_new_key_list(MAX_THREADS, &lock);
+    thread_list = create_new_key_list(defaults_ptr->max_threads, &lock);
 
     conn_queue = create_new_queue();
 
