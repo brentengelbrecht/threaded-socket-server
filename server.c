@@ -42,6 +42,8 @@ void *client_handler(void *parameters) {
     THREAD_MANAGEMENT_PTR t_data;
     KEY_LIST_NODE_PTR t_ptr;
 
+    time_t last_traffic = time(NULL);
+
     HANDLER_PARAMS_PTR p = (HANDLER_PARAMS_PTR)parameters;
     struct sockaddr_in *addr_in = (struct sockaddr_in *)&p->client_address;
     char *ip = inet_ntoa(addr_in->sin_addr);
@@ -53,9 +55,18 @@ void *client_handler(void *parameters) {
         printf("\t\tNew connection: client ip %s, port %d\n", ip, addr_in->sin_port);
     }
 
+
     /* Do thread-specific work here */
-    sleep(SLEEP);
+    while (true) {
+        sleep(SLEEP);
+
+        if ((time(NULL) - last_traffic) >= defaults_ptr->no_act_timeout) {
+            printf("\t\tNo-activity timeout - closing socket, ending thread\n");
+            break;
+        }
+    }
     /* End thread-specific work here */
+
 
     close(p->connfd);
 
@@ -65,7 +76,7 @@ void *client_handler(void *parameters) {
 
     remove_key_list_node(thread_list, t_data->key);
 
-    //pthread_detach(pthread_self());
+    pthread_detach(pthread_self());
     pthread_exit(NULL);
 }
 
