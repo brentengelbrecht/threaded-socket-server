@@ -16,8 +16,8 @@
 #define SERVER_DEFAULTS_PTR struct server_defaults *
 
 SERVER_DEFAULTS {
-    int port, max_threads, wait_timeout;
-} defaults = { PORT, MAX_THREADS, TIMEOUT };
+    int port, max_threads, wait_timeout, no_act_timeout;
+} defaults = { PORT, MAX_THREADS, NO_CONN_TIMEOUT, NO_ACT_TIMEOUT };
 
 SERVER_DEFAULTS_PTR defaults_ptr = &defaults;
 

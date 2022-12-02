@@ -5,12 +5,13 @@
 #include <time.h>
 
 
-/************************************************************************************************/
-#define PORT 9015       /* Port to listen on for server connections                             */
-#define MAX_THREADS 2   /* Maximum number of threads to use                                     */
-#define SLEEP 30        /* Maximum time to put client thread to sleep                           */
-#define TIMEOUT 10      /* Number of seconds to wait for a thread before closing the connection */
-/************************************************************************************************/
+/****************************************************************************************************/
+#define PORT 9015           /* Port to listen on for server connections                             */
+#define MAX_THREADS 2       /* Maximum number of threads to use                                     */
+#define SLEEP 30            /* Maximum time to put client thread to sleep                           */
+#define NO_CONN_TIMEOUT 10  /* Number of seconds to wait for a thread before closing the connection */
+#define NO_ACT_TIMEOUT 20   /* Number of seconds with no traffic before closing the connection      */
+/****************************************************************************************************/
 
 
 struct handler_params {
