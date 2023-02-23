@@ -1,3 +1,8 @@
+![GitHub repo size](https://img.shields.io/github/repo-size/brentengelbrecht/threaded-socket-server)
+![GitHub contributors](https://img.shields.io/github/contributors/brentengelbrecht/threaded-socket-server)
+![GitHub stars](https://img.shields.io/github/stars/brentengelbrecht/threaded-socket-server?style=social)
+![GitHub forks](https://img.shields.io/github/forks/brentengelbrecht/threaded-socket-server?style=social)
+
 # Threaded socket server
 
 Compact server to accept new socket connections and run them in a separate thread.
